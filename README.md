@@ -22,6 +22,8 @@ Visit the [Index page](https://ednark.github.io/continuousVoice/) to see some co
 </html>
 ```
 
+ContinuousVoice is a thin wrapper around the Web Speech API's speech recognition events. It exposes three new custom events: interimResults, stableResults, and finalResults. You can listen for these events and use them to trigger different behaviors.
+
 There are other nice libraries like [Annyang](https://www.talater.com/annyang/) that make voice integration easy, but they are not targeted towards handling immediate commands found during ongoing continuous speech. They usually have to wait for the speech to stop in order to properly process things. This library is an attempt to handle the special continuous listening case.
 
 Several usage examples are included starting from the main index.html.
