@@ -2,6 +2,8 @@
 
 A JavaScript Library that use Web Speech API to continuously listen for events. Just include the library directly in the head of you html document and attach a listener.
 
+Visit the [Index page](https://ednark.github.io/continuousVoice/) to see some cool example usage.
+
 ```html
 <html>
 <head>
