@@ -1,0 +1,5 @@
+## ignore these
+.DS_Store
+**/.DS_Store
+
+continuousVoice.code-workspace
