@@ -56,7 +56,7 @@
         <span class="token key">isFinal</span><span class="token punctuation">:</span> <span class="token bool">false</span><span class="token punctuation">,</span>
     <span class="token punctuation">}</span>
 
-    <span class="token key">ContinuousVoice</span>.<span class="token tag">addEventListener<span class="token punctuation">(</span> <span class="token string">'stableResult'</span><span class="token punctuation">, (</span><span class="token key">interimSpeechEvent</span><span class="token punctuation">) => {</span>
+    <span class="token key">ContinuousVoice</span>.<span class="token tag">addEventListener<span class="token punctuation">(</span> <span class="token string">'interimResult'</span><span class="token punctuation">, (</span><span class="token key">interimSpeechEvent</span><span class="token punctuation">) => {</span>
         <span class="token logic">if</span> <span class="token punctuation">(</span> <span class="token key">interimSpeechEvent.detail.isInterim</span> <span class="token punctuation">) {</span>
             <span class="token key">console</span>.<span class="token tag"></span>log</span><span class="token punctuation">(</span> <span class="token key">interimSpeechEvent.detail.interim</span> <span class="token punctuation">);
         }
