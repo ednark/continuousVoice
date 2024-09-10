@@ -1,0 +1,162 @@
+<html>
+<head>
+    <link rel="icon" type="image/png" href="data:image/png;base64,iVBORw0KGgo=">
+    <script src="./continuousVoice.js"></script>
+
+    <script src="./continuous-voice-ui.js"></script>
+    <link rel="stylesheet" href="./continuous-voice-ui.css" />
+    <style>
+        #cc-container {
+            position: absolute;
+            bottom: 0.5em;
+            left: 0.5em;
+
+            border: solid 3px var(--ui-highlight-color);
+            border-radius: 10px;
+
+            background: #000;
+            width: calc(100% - 1em);
+            height: 6em;
+
+            opacity: 0.5;
+            overflow: hidden;
+            pointer-events: none;
+        }
+        #cc-container .header {
+            display: none;
+        }
+        #cc-window {
+            position: absolute;
+
+            clip-path: inset(calc(100% - 5em) 0 0 0);
+
+            padding: 0.5em;
+            bottom: 0px;
+            left: 0px;
+
+            overflow: hidden;
+            pointer-events: none;
+        }
+        .cc-text {
+            font-size: 2em;
+            display: inline;
+            pointer-events: none;
+            padding-right: .25em;
+        }
+    </style>
+</head>
+<body>
+
+<h2>Closed Captions</h2>
+
+<div class="voiceEventControlPanel">
+
+    <div class="voiceEventControl">
+        <label for="listening-switch">
+            Listening
+        </label>
+        <label for="listening-switch"  id="listening-switch-label" class="switch">            
+            <input type="checkbox" id="listening-switch" name="listening-switch" />
+            <span class="slider round"></span>
+        </label>
+    </div>
+
+    <div class="voiceEventControl">
+        Listen Event <span class="pill">
+            <span class="pill-button">
+                <input type='radio' name='follow-style' value='interim' id='follow-style-interim'>
+                <label for='follow-style-interim'>Interim</label>
+            </span>
+            <span class="pill-button">
+                <input type='radio' name='follow-style' value='stable' id='follow-style-stable'>
+                <label for='follow-style-stable'>Stable</label>
+            </span>
+            <span class="pill-button">
+                <input type='radio' name='follow-style' value='final' id='follow-style-final'>
+                <label for='follow-style-final'>Final</label>
+            </span>
+        </span>
+    </div>
+
+    <div class="voiceEventControl">
+        <br />
+        <button id="reset-button" class="btn" type="button" onclick="resetState()" tabindex="-1">Reset</button>
+    </div>
+
+</div>
+
+<p>This example shows a closed caption system. Say anything and it should appear overlayed at the bottom of the screen. The Close Caption overlay should pass through any clicks it receives, so it should never interfere with the underlying interface.</p>
+
+<div class="voiceEventVisualizers">
+
+    <div class="voiceEventVisualizer" id="speechVisualizer">
+        <span class="header">Speech</span>
+        <span class="content" id="speechVisualizerText"><br /></span>
+    </div>
+
+    <div class="voiceEventVisualizer" id="cc-container">
+        <span class="header">Closed Caption</span>
+        <span class="content" id="cc-window"><br /></span>
+    </div>
+
+</div>
+
+<script>
+
+function handleVoiceResult(event) {
+    showClosedCaption(event)
+}
+
+function resetState()
+{
+    // clear out the closed caption area
+    let cc_area = document.getElementById('cc-window');
+    if ( cc_area ) {
+        cc_area.innerHTML = ''
+    }
+}
+
+function showClosedCaption(event) {
+
+    let cc_area = document.getElementById('cc-window');
+
+    let ogHeight = cc_area.offsetHeight
+
+    let cc_line = document.getElementById('transcript-log-'+event.detail.id);
+    if ( !cc_line ) {
+        cc_line = document.createElement('span');
+        cc_line.id = 'transcript-log-'+event.detail.id;
+        cc_line.classList.add('cc-text');
+        cc_area.appendChild(cc_line);
+    }
+
+    cc_line.innerHTML = event.detail.transcript;
+
+    let currHeight = cc_area.offsetHeight
+    let distance = Math.max(0, currHeight-ogHeight)
+
+    if ( distance > 0 ) {
+        // smooth scroll
+        clearTimeout(cc_area.resetPositionTimer);
+        cc_area.resetPositionTimer = null;
+
+        let time = 0.25;
+
+        cc_area.style.transition = "none";
+        cc_area.style.bottom = `0px`;
+        cc_area.style.transform = `translateY(0px)`;
+
+        cc_area.style.transition = `transform ${time}s ease-in`;
+        cc_area.style.bottom = `-${distance}px`;
+        cc_area.style.transform = `translateY(-${distance}px)`;
+
+        cc_area.resetPositionTimer = setTimeout(() => {
+            cc_area.style.transition = "none";
+            cc_area.style.bottom = `0px`;
+            cc_area.style.transform = `translateY(0px)`;
+        }, (time*1000) );
+    }
+}
+
+</script>
+</body>

@@ -1,0 +1,150 @@
+<html>
+<head>
+    <link rel="icon" type="image/png" href="data:image/png;base64,iVBORw0KGgo=">
+</head>
+<body>
+
+<script>
+
+    function metaphone(e){var a="X",r="0";return function(e){var i,b,k,o,f="",H=0;function S(e){f+=e}function A(a){return e.charAt(H+a).toUpperCase()}function C(e){return function(){return A(e)}}if(!(e=String(e||"")))return"";b=C(1),k=C(0),o=C(-1);for(;!u(k());){if(!k())return"";H++}switch(k()){case"A":"E"===b()?(S("E"),H+=2):(S("A"),H++);break;case"G":case"K":case"P":"N"===b()&&(S("N"),H+=2);break;case"W":"R"===b()?(S(b()),H+=2):"H"===b()?(S(k()),H+=2):t(b())&&(S("W"),H+=2);break;case"X":S("S"),H++;break;case"E":case"I":case"O":case"U":S(k()),H++}for(;k();)if(i=1,!u(k())||k()===o()&&"C"!==k())H+=i;else{switch(k()){case"B":"M"!==o()&&S("B");break;case"C":n(b())?"I"===b()&&"A"===A(2)?S(a):"S"!==o()&&S("S"):"H"===b()?(S(a),i++):S("K");break;case"D":"G"===b()&&n(A(2))?(S("J"),i++):S("T");break;case"G":"H"===b()?c(A(-3))||"H"===A(-4)||(S("F"),i++):"N"===b()?!u(A(2))||"E"===A(2)&&"D"===A(3)||S("K"):n(b())&&"G"!==o()?S("J"):S("K");break;case"H":t(b())&&!s(o())&&S("H");break;case"K":"C"!==o()&&S("K");break;case"P":"H"===b()?S("F"):S("P");break;case"Q":S("K");break;case"S":"I"!==b()||"O"!==A(2)&&"A"!==A(2)?"H"===b()?(S(a),i++):S("S"):S(a);break;case"T":"I"!==b()||"O"!==A(2)&&"A"!==A(2)?"H"===b()?(S(r),i++):"C"===b()&&"H"===A(2)||S("T"):S(a);break;case"V":S("F");break;case"W":t(b())&&S("W");break;case"X":S("KS");break;case"Y":t(b())&&S("Y");break;case"Z":S("S");break;case"F":case"J":case"L":case"M":case"N":case"R":S(k())}H+=i}return f}(e);function c(e){return"B"===(e=i(e))||"D"===e||"H"===e}function n(e){return"E"===(e=i(e))||"I"===e||"Y"===e}function t(e){return"A"===(e=i(e))||"E"===e||"I"===e||"O"===e||"U"===e}function s(e){return"C"===(e=i(e))||"G"===e||"P"===e||"S"===e||"T"===e}function u(e){var a=function(e){return i(e).charCodeAt(0)}(e);return a>=65&&a<=90}function i(e){return String(e).charAt(0).toUpperCase()}};
+
+    // idea: assume all commands are regex
+    // make allowances for a few special tokens
+    // convert named variables to named capture groups
+
+    let tt = [
+        'boring string',
+        'Say Hello (to)? $who',
+        'Say Hello *who',
+    ]
+
+    var optionalParam = /\s*\((.*?)\)\?\s*/g;
+    var optionalParamConversion = '\\s*(?:$1)?\\s*';
+    
+    var namedParam    = /\$(\w+)/g;
+    var namedParamConversion = '\\s*(?<$1>[^\\s]+)\\s*'
+    
+    var splatParam    = /\*(\w+)/g;
+    var splatParamConversion = '\\s*(?<$1>.*?)\\s*'
+
+    for ( let t in tt ) {
+        let command = tt[t]
+        command = command.replace(optionalParam, optionalParamConversion)
+        command = command.replace(namedParam, namedParamConversion)
+        command = command.replace(splatParam, splatParamConversion)
+        console.log(tt[t]," => ",command)
+    }
+
+    function regexToMetaphone(regexPattern) {
+        // Split the regex into words and non-words
+        const parts = regexPattern.match(/\b\w+\b|\W+/g);
+        let convertedParts = []
+        for ( let p in parts ) {
+            p = parseInt(p)
+            let prev = (p > 0) ? parts[p-1] : "";
+            let part = parts[p]
+            let next = (p < parts.length-1) ? parts[p+1] : "";
+            if ( /^\w+$/.test(part) ) {
+                // don't convert $var 
+                if ( prev.length >= 1 && prev[prev.length - 1] == '$' ) {
+                    convertedParts.push(part)
+                // don't convert named capture group 
+                } else if ( 
+                    prev.length >= 3 
+                    && prev.slice(-3) == '(?<' 
+                    && next.length >= 1 
+                    && next[0] == '>' 
+                ) {
+                    convertedParts.push(part)
+                // convert this word
+                } else {
+                    convertedParts.push(metaphone(part) || part)
+                }
+            // don't convert non-word characters
+            } else {
+                convertedParts.push(part)
+            }
+        }
+        
+        // Reconstruct the regex
+        metaRegex = convertedParts.join('');
+
+        metaRegex = metaRegex
+            .replace(optionalParam, optionalParamConversion)
+            .replace(namedParam, namedParamConversion)
+            .replace(splatParam, splatParamConversion)
+        return metaRegex
+    }
+
+    function findTokenIndexAtPosition(str, position) {
+        // Ensure position is within the string length
+        if (position < 0 || position >= str.length) {
+            return null;
+        }
+
+        let wordCount = 0;
+        let charCount = 0;
+        let inWord = false;
+
+        for (let i = 0; i <= position; i++) {
+            if (/\S/.test(str[i])) {
+                if (!inWord) {
+                    wordCount++;
+                    inWord = true;
+                }
+            } else {
+                inWord = false;
+            }
+            charCount++;
+
+            if (charCount === position + 1) {
+                return wordCount;
+            }
+        }
+
+        return wordCount;
+    }
+
+
+    // Example usage
+    const originalRegex = "Say hello (to)? $who";
+    const metaphoneRegex = regexToMetaphone(originalRegex);
+
+    console.log(`Original regex: ${originalRegex}`);
+    console.log(`Metaphone regex: ${metaphoneRegex}`);
+
+    for ( let speech of [
+        "why hello there",
+        "say hello to me",
+        "okay then let's say hello parrot"
+    ]) {
+        console.log("\nChecking: ", speech);
+        let metas = []
+        let tokens = speech.split(/\s+/);
+        for ( let token of tokens ) {
+            metas.push(metaphone(token))
+        }
+        let meta = metas.join(' ')
+
+        let matches = meta.matchAll(metaphoneRegex)
+        for (const match of matches) {
+            console.log("Full match:", match[0], "starts at", match.index);
+            for (let i = 1; i < match.length; i++) {
+                let groupStart = meta.indexOf(match[i], match.index);
+                let startIndex = findTokenIndexAtPosition(meta, groupStart)
+                let endIndex = findTokenIndexAtPosition(meta, groupStart+match[i].length-1)
+                console.log(`Group ${i}:`, match[i], meta.length, " | group starts at", groupStart, "token index", startIndex, ' | ends at', groupStart+match[i].length, 'token index', endIndex);
+                /// todo: fill capture groups with original words
+                /// we have both the start and the end of the entire match, given this range
+                /// we need to find out the original words from the non-metaphone string
+                /// we need to extract the token indexes of item within named capture groups and match them up with their non-metaphone string
+            }
+        }
+        
+        console.log(speech, " => ", meta)
+    }
+
+</script>
+
+</body>
+</html>

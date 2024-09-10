@@ -1,0 +1,41 @@
+#cc-container {
+    position: absolute;
+    bottom: 0.5em;
+    left: 0.5em;
+
+    border: solid 3px #333;
+    border-radius: 10px;
+
+    background: #000;
+    width: calc(80% - 1em);
+    height: 7em;
+
+    opacity: 0.5;
+    overflow: hidden;
+    pointer-events: none;
+    transform: translateY(0);
+    transition: opacity 0.5s ease-in-out, transform 0.5s ease-in-out;
+}
+#cc-container.hidden {
+    opacity: 0;
+    transform: translateY(6em);
+}
+#cc-window {
+    position: absolute;
+
+    clip-path: inset(calc(100% - 6.2em) 0 0 0);
+
+    padding: 0.5em;
+    bottom: 0px;
+    left: 0px;
+
+    overflow: hidden;
+    pointer-events: none;
+}
+.cc-text {
+    font-size: 2em;
+    display: inline;
+    pointer-events: none;
+    padding-right: .25em;
+    color: white;
+}

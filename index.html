@@ -1,0 +1,119 @@
+<html>
+<head>
+    <link rel="icon" type="image/png" href="data:image/png;base64,iVBORw0KGgo=">
+
+    <script src="./continuousVoice.js"></script>
+    <script src="./continuous-voice-ui.js"></script>
+    <link rel="stylesheet" href="./continuous-voice-ui.css" />
+</head>
+<body>
+
+<h2>ContinuousVoice.js</h2>
+
+<p>ContinuousVoice is a thin wrapper around the Web Speech API's speech recognition events. It exposes three new custom events: interimResults, stableResults, and finalResults. You can listen for these events and use them to trigger differnt behaviors.</p>
+<p>Here are some usage examples:</p>
+    <ul>
+        <li><a href="./events-monitor.html">Events Monitor</a>: Visualizes what the speech events look like.</li>
+        <li><a href="./closed-captions.html">Closed Captions</a>: Displays speech in an overlay at the bottom of the screen.</li>
+        <li><a href="./follow-lyrics.html">Follow Lyrics</a>: Follows along while you read/sing lyrics.</li>
+        <li><a href="./reading-actions.html">Reading Actions</a>: Follows along while you read and triggers action at specific points in the story.</li>
+    </ul>
+</p>
+
+<p>ContinuousCommands.js builds upon ContinuousVoice to listen for certain key words and phrases, and trigger registered functions when the phrases are detected. Because the logic for tracking commands is a bit complicated, this was broken out into a separate class.
+    <ul>
+        <li><a href="./command-listener.html">Command Listener</a>: Listens for specific phrases in continuous speech events.</li>
+        <li><a href="./revealjs/presentation.html">RevealJs Integrations</a>: A Work in progress that exposes voice commands to presentations.</li>
+    </ul>
+</p>
+
+<p>All speech events are emitted in the same format, with <code><span class="token key">id</span></code> storing a unique identifier for each transcript, <code><span class="token key">new</span></code> storing the diff between the current and previous events, and <code><span class="token key">interim</span></code>/<code><span class="token key">stable</span></code>/<code><span class="token key">transcript</span></code> storing variations of the speech heard.</p>
+<code class="block">
+    <span class="token key">speechEvent</span> <span class="token punctuation">=</span> <span class="token punctuation">{</span> 
+        <span class="token key">id</span><span class="token punctuation">:</span> <span class="token int">int</span><span class="token punctuation">,</span>
+        <span class="token key">transcript</span><span class="token punctuation">:</span> <span class="token string">string</span><span class="token punctuation">,</span>
+        <span class="token key">stable</span><span class="token punctuation">:</span> <span class="token string">string</span><span class="token punctuation">,</span>
+        <span class="token key">interim</span><span class="token punctuation">:</span> <span class="token string">string</span><span class="token punctuation">,</span>
+        <span class="token key">new</span><span class="token punctuation">:</span> <span class="token string">string</span><span class="token punctuation">,</span>
+        <span class="token key">isInterim</span><span class="token punctuation">:</span> <span class="token bool">bool</span><span class="token punctuation">,</span>
+        <span class="token key">isStable</span><span class="token punctuation">:</span> <span class="token bool">bool</span><span class="token punctuation">,</span>
+        <span class="token key">isFinal</span><span class="token punctuation">:</span> <span class="token bool">bool</span><span class="token punctuation">,</span>
+    <span class="token punctuation">}</span>
+</code>
+
+<br /><p>InterimResults emit immediately, but the <code><span class="token key">interim</span></code> portion may contain partial words or words that could be changed or reinterpretted in future events. For Interim events, the <code><span class="token key">transcript</span></code> contains both the <code><span class="token key">stable</span></code> and <code><span class="token key">interim</span></code> strings concatenated together. The idea being that if you are interested in interm events you would want to act on all possbile parts. The <code><span class="token key">new</span></code> string contains only the new words of the <code><span class="token key">interim</span></code> parameter since the last event.</p>
+<code class="block">
+    <span class="token tagfix">&lt;</span><span class="token tag">script</span> <span class="token attr">src</span><span class="token punctuation">=</span><span class="token string">"./continuousVoice.js"</span> <span class="token tagfix"></span>\&gt;</span>
+
+    <span class="token key">interimSpeechEvent</span> <span class="token punctuation">=</span> <span class="token punctuation">{</span> 
+        <span class="token key">id</span><span class="token punctuation">:</span> <span class="token int">0</span><span class="token punctuation">,</span>
+        <span class="token key">transcript</span><span class="token punctuation">:</span> <span class="token string">"all words in the transcript"</span><span class="token punctuation">,</span>
+        <span class="token key">stable</span><span class="token punctuation">:</span> <span class="token string">"all words in"</span><span class="token punctuation">,</span>
+        <span class="token key">interim</span><span class="token punctuation">:</span> <span class="token string">"the transcript"</span><span class="token punctuation">,</span>
+        <span class="token key">new</span><span class="token punctuation">:</span> <span class="token string">"transcript"</span><span class="token punctuation">,</span>
+        <span class="token key">isInterim</span><span class="token punctuation">:</span> <span class="token bool">true</span><span class="token punctuation">,</span>
+        <span class="token key">isStable</span><span class="token punctuation">:</span> <span class="token bool">false</span><span class="token punctuation">,</span>
+        <span class="token key">isFinal</span><span class="token punctuation">:</span> <span class="token bool">false</span><span class="token punctuation">,</span>
+    <span class="token punctuation">}</span>
+
+    <span class="token key">ContinuousVoice</span>.<span class="token tag">addEventListener<span class="token punctuation">(</span> <span class="token string">'stableResult'</span><span class="token punctuation">, (</span><span class="token key">interimSpeechEvent</span><span class="token punctuation">) => {</span>
+        <span class="token logic">if</span> <span class="token punctuation">(</span> <span class="token key">interimSpeechEvent.detail.isInterim</span> <span class="token punctuation">) {</span>
+            <span class="token key">console</span>.<span class="token tag"></span>log</span><span class="token punctuation">(</span> <span class="token key">interimSpeechEvent.detail.interim</span> <span class="token punctuation">);
+        }
+    });</span>
+
+</code>
+
+<br /><p>StableResults emit a little behind the interim results and the <code><span class="token key">stable</span></code> portion contains results that will (most likely) persist throughout future events. For Stable events, the <code><span class="token key">transcript</span></code> contains only the <code><span class="token key">stable</span></code> string and is a duplicate of that parameter. The idea being that if you are interested in stable events you would not want to act on the interim parts. The <code><span class="token key">new</span></code> string contains only the new words of the <code><span class="token key">stable</span></code> parameter since the last event.</p>
+<code class="block">
+    <span class="token tagfix">&lt;</span><span class="token tag">script</span> <span class="token attr">src</span><span class="token punctuation">=</span><span class="token string">"./continuousVoice.js"</span> <span class="token tagfix"></span>\&gt;</span>
+
+    <span class="token key">stableSpeechEvent</span> <span class="token punctuation">=</span> <span class="token punctuation">{</span> 
+        <span class="token key">id</span><span class="token punctuation">:</span> <span class="token int">1</span><span class="token punctuation">,</span>
+        <span class="token key">transcript</span><span class="token punctuation">:</span> <span class="token string">"all words in"</span><span class="token punctuation">,</span>
+        <span class="token key">stable</span><span class="token punctuation">:</span> <span class="token string">"all words in"</span><span class="token punctuation">,</span>
+        <span class="token key">interim</span><span class="token punctuation">:</span> <span class="token string">"the transcript"</span><span class="token punctuation">,</span>
+        <span class="token key">new</span><span class="token punctuation">:</span> <span class="token string">"words in"</span><span class="token punctuation">,</span>
+        <span class="token key">isInterim</span><span class="token punctuation">:</span> <span class="token bool">false</span><span class="token punctuation">,</span>
+        <span class="token key">isStable</span><span class="token punctuation">:</span> <span class="token bool">true</span><span class="token punctuation">,</span>
+        <span class="token key">isFinal</span><span class="token punctuation">:</span> <span class="token bool">false</span><span class="token punctuation">,</span>
+    <span class="token punctuation">}</span>
+
+    <span class="token key">ContinuousVoice</span>.<span class="token tag">addEventListener<span class="token punctuation">(</span> <span class="token string">'stableResult'</span><span class="token punctuation">, (</span><span class="token key">stableSpeechEvent</span><span class="token punctuation">) => {</span>
+        <span class="token logic">if</span> <span class="token punctuation">(</span> <span class="token key">stableSpeechEvent.detail.isStable</span> <span class="token punctuation">) {</span>
+            <span class="token key">console</span>.<span class="token tag"></span>log</span><span class="token punctuation">(</span> <span class="token key">stableSpeechEvent.detail.stable</span> <span class="token punctuation">);
+        }
+    });</span>
+
+</code>
+
+<br /><p>FinalResults emit last and all word parameters <code><span class="token key">transcript</span></code>, <code><span class="token key">interim</span></code>, <code><span class="token key">stable</span></code>, and <code><span class="token key">new</span></code>, are the same containing the full text captured since beginning the transcript. This most simulates the experience of how Alexa works.</p>
+<code class="block">
+    <span class="token tagfix">&lt;</span><span class="token tag">script</span> <span class="token attr">src</span><span class="token punctuation">=</span><span class="token string">"./continuousVoice.js"</span> <span class="token tagfix"></span>\&gt;</span>
+
+    <span class="token key">finalSpeechEvent</span> <span class="token punctuation">=</span> <span class="token punctuation">{</span> 
+        <span class="token key">id</span><span class="token punctuation">:</span> <span class="token int">2</span><span class="token punctuation">,</span>
+        <span class="token key">transcript</span><span class="token punctuation">:</span> <span class="token string">"all words in the transcript"</span><span class="token punctuation">,</span>
+        <span class="token key">stable</span><span class="token punctuation">:</span> <span class="token string">"all words in the transcript"</span><span class="token punctuation">,</span>
+        <span class="token key">interim</span><span class="token punctuation">:</span> <span class="token string">"all words in the transcript"</span><span class="token punctuation">,</span>
+        <span class="token key">new</span><span class="token punctuation">:</span> <span class="token string">"all words in the transcript"</span><span class="token punctuation">,</span>
+        <span class="token key">isInterim</span><span class="token punctuation">:</span> <span class="token bool">false</span><span class="token punctuation">,</span>
+        <span class="token key">isStable</span><span class="token punctuation">:</span> <span class="token bool">false</span><span class="token punctuation">,</span>
+        <span class="token key">isFinal</span><span class="token punctuation">:</span> <span class="token bool">true</span><span class="token punctuation">,</span>
+    <span class="token punctuation">}</span>
+
+    <span class="token key">ContinuousVoice</span>.<span class="token tag">addEventListener<span class="token punctuation">(</span> <span class="token string">'finalResult'</span><span class="token punctuation">, (</span><span class="token key">finalSpeechEvent</span><span class="token punctuation">) => {</span>
+        <span class="token logic">if</span> <span class="token punctuation">(</span> <span class="token key">finalSpeechEvent.detail.isFinal</span> <span class="token punctuation">) {</span>
+            <span class="token key">console</span>.<span class="token tag"></span>log</span><span class="token punctuation">(</span> <span class="token key">finalSpeechEvent.detail.interim</span> <span class="token punctuation">);
+        }
+    });</span>
+
+</code>
+
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+
+    });
+</script>
+</body>
+</html>

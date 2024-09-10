@@ -1,0 +1,127 @@
+<!doctype html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+
+		<title>reveal.js</title>
+
+		<link rel="stylesheet" href="./dist/reset.css">
+		<link rel="stylesheet" href="./dist/reveal.css">
+		<link rel="stylesheet" href="./dist/theme/ednark.css">
+		<link rel="stylesheet" href="./revealVoiceClosedCaptions.css">
+		
+		<script src="../continuousVoice.js"></script>
+		<script src="./revealVoice.js"></script>
+		<script src="./revealVoiceClosedCaptions.js"></script>
+
+	</head>
+	<body>
+		<div class="reveal">
+			<div class="slides">
+				<section class="slide-type-standard">
+					<section id="cover">
+						<h1>Presentation Time</h1>
+						<hr /><br />
+						<h3>Super Good Business Idea</h3>
+						<p>This RevealJs Slide Presentation illustrates integration with ContinuousListening.</p>
+						<p>It triggers RevealJs actions and displays speech as closed captions when you start talking.</p>
+						<br /><br /><p>Try saying: <span class="command">"Next Slide"</span> or <span class="command">"Toggle Captions"</span></p>
+					</section>
+				</section>
+				<section class="slide-type-standard">
+					<div class="slide-header">
+						<h2>Presented By</h2>
+					</div>
+					<section id="intro-presenter">
+						<div class="slide-header">
+							<h3>Verbalizing Entity</h3>
+							<hr /><br />
+						</div>
+						<h3>Ednark</h3>
+						<h4>Super-President of Everything, Earth</h4>
+						<br />
+						<ul>
+							<li>Reasonable Body Symmetry.</li>
+							<li>Over 5 years experience with opposable thumbs.</li>
+						</ul>
+						<br /><br /><p>Try saying: <span class="command">"Next Slide"</span>, <span class="command">"Previous Slide"</span>, <span class="command">"Down a Slide"</span></p>
+					</section>
+					<section id="intro-company">
+						<div class="slide-header">
+							<h3>Company</h3>
+							<hr /><br />
+						</div>
+						<h4>Earth, LLC.</h4>
+						<h4></h4>Providing business-to-business Fresh Air delivery from Earth to Mars.</h4>
+						<br /><br /><p>Try saying: <span class="command">"Up a Slide"</span>, <span class="command">"Go To Slide 0"</span>, <span class="command">"Go to Slide 1"</span></p>
+					</section>
+				</section>
+				<section class="slide-type-standard">
+					<div class="slide-header">
+						<h2>Sales Pitch</h2>
+					</div>
+					<section id="topic">
+						<div class="slide-header">
+							<h3>General Idea</h3>
+							<hr /><br />
+						</div>
+						<p>Migrating air to Mars. You need it, we got it.</p>
+						<p>Now we want your money too.</p>
+						<br /><br /><p>Try saying: <span class="command">"Press Up"</span>, <span class="command">"Press Down"</span>, <span class="command">"Press Left"</span>, <span class="command">"Press Right"</span></p>
+						<p>Try saying: <span class="command">"Toggle Navigation"</span> then <span class="command">"Press Down"</span> then <span class="command">"Press Left"</span>, <span class="command">"Press Space"</span></p>
+					</section>
+					<section id="topic-oxygen">
+						<div class="slide-header">
+							<h3>Oxygen ?</h3>
+							<hr /><br />
+						</div>
+						<p>We got Oxygen.</p>
+						<br /><br /><p>Try saying: <span class="command">"This Concludes our Presentation"</span></p>
+					</section>
+					<section id="topic-helium">
+						<div class="slide-header">
+							<h3>Helium ?</h3>
+							<hr /><br />
+						</div>
+						<p>No helium though, sorry, so no parties on Mars.</p>
+						<br /><br /><p>Try saying: <span class="command">"Go Back a Section"</span></p>
+					</section>
+				</section>
+				<section  class="slide-type-standard">
+					<section id="conclusion">
+						<h1>The End</h1>
+						<hr /><br />
+						<h4>See you, Space Cowboy</h4>
+						<br /><br /><p>Try saying: <span class="command">"Restart the Presentation"</span></p>
+					</section>
+				</section>
+			</div>
+		</div>
+
+		<script src="dist/reveal.js"></script>
+		<script>
+			Reveal.initialize({
+				hash: true,
+				// Learn about plugins: https://revealjs.com/plugins/
+				// plugins: [ RevealMarkdown ],
+				plugins: [ ],
+				width: 1600,
+				height: 900,
+				// Factor of the display size that should remain empty around
+				// the content
+				margin: 0.02,
+				// Bounds for smallest/largest possible scale to apply to content
+				minScale: 0.2,
+				maxScale: 2.0
+			});
+		</script>
+		<script>
+			document.addEventListener('DOMContentLoaded', () => {
+				if ( RevealVoice ) {
+					RevealVoice.startListening();
+				}
+			});
+		</script>
+	</body>
+</html>

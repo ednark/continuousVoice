@@ -1,0 +1,54 @@
+<html>
+<head>
+    <link rel="icon" type="image/png" href="data:image/png;base64,iVBORw0KGgo=">
+
+    <script src="./continuousVoice.js"></script>
+    <script src="./continuous-voice-ui.js"></script>
+    <link rel="stylesheet" href="./continuous-voice-ui.css" />
+    <style>
+    </style>
+</head>
+<body>
+
+<h2>Event Monitor</h2>
+
+<div class="voiceEventControlPanel">
+
+    <div class="voiceEventControl">
+        <label for="listening-switch">
+            Listening
+        </label>
+        <label for="listening-switch"  id="listening-switch-label" class="switch">            
+            <input type="checkbox" id="listening-switch" name="listening-switch" />
+            <span class="slider round"></span>
+        </label>
+    </div>
+
+</div>
+
+<p>Just start talking to visualize what data is being sent to the different ContinuousVoice events. The "Finalize Current Result" button will cause whatever interim results currenty exist to be processed as a final result.</p>
+
+<div class="voiceEventVisualizers">
+    <div class="voiceEventVisualizer" id="interimVisualizer">
+        <span class="header">Interim Result</span>
+        <span class="content" id="interimVisualizerText">&nbsp;</span>
+        <!-- <span class="content" id="interimVisualizerJson">&nbsp;</span> -->
+    </div>
+    <div class="voiceEventVisualizer" id="stableVisualizer">
+        <span class="header">Stable Result</span>
+        <span class="content" id="stableVisualizerText">&nbsp;</span>
+        <!-- <span class="content" id="stableVisualizerJson">&nbsp;</span> -->
+    </div>
+    <div class="voiceEventVisualizer" id="finalVisualizer">
+        <span class="header">Final Result</span>
+        <span class="content" id="finalVisualizerText">&nbsp;</span>
+        <!-- <span class="content" id="finalVisualizerJson">&nbsp;</span> -->
+    </div>
+    <div class="voiceEventVisualizer" id="logVisualizer">
+        <span class="header">Log</span>
+        <span class="content" id="logVisualizerText"></span>
+    </div>
+</div>
+
+</body>
+</html>

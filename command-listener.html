@@ -1,0 +1,128 @@
+<html>
+<head>
+    <link rel="icon" type="image/png" href="data:image/png;base64,iVBORw0KGgo=">
+
+    <script src="./continuousVoice.js"></script>
+    <script src="./continuousCommands.js"></script>
+
+    <script src="./continuous-voice-ui.js"></script>
+    <link rel="stylesheet" href="./continuous-voice-ui.css" />
+    <style>
+        .task-row th,
+        .task-row td {
+            text-align: left;
+            padding: .5em;
+        }
+        .task-row th:nth-child(2),
+        .task-row td:nth-child(2) {
+            text-align: right;
+            color: orange;
+        }
+    </style>
+</head>
+<body>
+
+<h2>Command Listener</h2>
+
+<div class="voiceEventControlPanel">
+
+    <div class="voiceEventControl">
+        <label for="listening-switch">
+            Listening
+        </label>
+        <label for="listening-switch"  id="listening-switch-label" class="switch">            
+            <input type="checkbox" id="listening-switch" name="listening-switch" />
+            <span class="slider round"></span>
+        </label>
+    </div>
+
+    <div class="voiceEventControl">
+        Listen Event <span class="pill">
+            <span class="pill-button">
+                <input type='radio' name='follow-style' value='interim' id='follow-style-interim'>
+                <label for='follow-style-interim'>Interim</label>
+            </span>
+            <span class="pill-button">
+                <input type='radio' name='follow-style' value='stable' id='follow-style-stable'>
+                <label for='follow-style-stable'>Stable</label>
+            </span>
+            <span class="pill-button">
+                <input type='radio' name='follow-style' value='final' id='follow-style-final'>
+                <label for='follow-style-final'>Final</label>
+            </span>
+        </span>
+    </div>
+
+</div>
+
+<p>Listen for special keywords and phrases and take an action when heard.</p>
+
+<div class="voiceEventVisualizers">
+    <div class="voiceEventVisualizer">
+        <span class="header">Commands</span>
+        <span class="content" style="white-space: pre;">
+            <table>
+            <thead>
+                <tr class="task-row">
+                    <th>Command</th>
+                    <th>Calls</th>
+                    <th>Result</th>
+                </tr>
+            </thead>
+            <tbody>
+            <tr class="task-row">
+                    <td>"roll dice"</td>
+                    <td id="command-1-count">#</td>
+                    <td id="command-1-result">...</td>
+                </tr>
+                <tr class="task-row">
+                    <td>"say hello $who"</td>
+                    <td id="command-2-count">#</td>
+                    <td id="command-2-result">...</td>
+                </tr>
+            </tbody>
+            </table>
+        </span>
+    </div>
+
+    <div class="voiceEventVisualizer" id="speechVisualizer">
+        <span class="header">Speech Results</span>
+        <span class="content" id="speechVisualizerText">&nbsp;</span>
+    </div>
+</div>
+
+<script>
+
+    function handleVoiceResult(event) {
+        ContinuousCommands.runCommandsInSpeechEvent(event)
+    }
+    document.addEventListener('DOMContentLoaded', () => {
+
+        // ContinuousVoice.addEventListener('stableResult',handleVoiceResult);
+
+        // Register test command with two trigger variations
+        ContinuousCommands.addCommand(['roll dice','roll the dice'], () => {
+            roll1 = Math.floor(Math.random() * 6) + 1;
+            roll2 = Math.floor(Math.random() * 6) + 1;
+            document.getElementById('command-1-result').innerHTML = '2d6 => '+ roll1 +', '+ roll2 +' = '+ (roll1+roll2);
+            let elCount = document.getElementById('command-1-count')
+            if ( elCount ) {
+                let currCount = parseInt(elCount.textContent) || 0;
+                elCount.innerHTML = currCount + 1;
+            }
+        });
+
+        // Register test command with a variable
+        ContinuousCommands.addCommand(['say hello $who'], (params) => {
+            document.getElementById('command-2-result').innerHTML = 'Hello, '+ params.$who +'!';
+            let elCount = document.getElementById('command-2-count')
+            if ( elCount ) {
+                let currCount = parseInt(elCount.textContent) || 0;
+                elCount.innerHTML = currCount + 1;
+            }
+        });
+
+});
+</script>
+</body>
+</html>

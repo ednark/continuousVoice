@@ -1,0 +1,330 @@
+<html>
+<head>
+    <link rel="icon" type="image/png" href="data:image/png;base64,iVBORw0KGgo=">
+    <script src="./continuousVoice.js"></script>
+    <script src="./continuous-voice-ui.js"></script>
+    <link rel="stylesheet" href="./continuous-voice-ui.css" />
+    <style>
+        #story {
+            display: inline-block;
+            white-space: pre;
+            padding-top: 2em;
+            font-size: 120%;
+        }
+        #story span { 
+            line-height: 1.5em; 
+            border-style: solid; 
+            border-width: 0px 0px 2px 0px; 
+            border-color: transparent; 
+        }
+        #story span.heard { 
+            color: var(--ui-neutral-color); 
+        }
+        #story span.listening { 
+            border-color: var(--ui-highlight-color); 
+            background: linear-gradient(to top, rgba(255, 165, 0, 0.5), transparent 100%);
+        }
+   
+        #story span.action-trigger { 
+            font-size: 1em; font-weight: bold;
+            color: orange; 
+            border: none;
+        }
+
+        #reading-pages {
+            display: flex;
+            flex-wrap: wrap-reverse;
+            justify-content: center;
+            padding-bottom: 1em;
+        }
+        #reading-pages img.page {
+            flex: 1;
+            max-width: 100px;
+            max-height: 100px;
+            z-index: 5;
+            margin-left: -75px;
+            opacity: 0.2;
+            border-radius: 5px;
+            transition: transform 0.5s ease-in, z-index 0.5s ease-in, opacity 0.5s ease-in, border 0.5s ease-in;
+        }
+        #reading-pages img.page.current {
+            z-index: 10;
+            opacity: 1;
+            border: 2px solid var(--ui-highlight-color);
+            transform: translateY(-50px) scale(1.2) rotate(10deg);
+        }
+        #reading-pages img:nth-child(1).page.current { transform: translateY(-50px) scale(2) rotate(-10deg); }
+        #reading-pages img:nth-child(2).page.current { transform: translateY(-50px) scale(2) rotate(-5deg); }
+        #reading-pages img:nth-child(3).page.current { transform: translateY(-50px) scale(2) rotate(-1deg); }
+        #reading-pages img:nth-child(4).page.current { transform: translateY(-50px) scale(2) rotate(1deg); }
+        #reading-pages img:nth-child(5).page.current { transform: translateY(-50px) scale(2) rotate(5deg); }
+        #reading-pages img:nth-child(6).page.current { transform: translateY(-50px) scale(2) rotate(10deg); }
+        #reading-pages img:first-child.page {
+            margin-left: 0px;
+            left: 0px;
+        }
+
+</style>
+</head>
+<body>
+
+<h2>Reading Actions</h2>
+
+<div class="voiceEventControlPanel">
+
+    <div class="voiceEventControl">
+        <label for="listening-switch">
+            Listening
+        </label>
+        <label for="listening-switch"  id="listening-switch-label" class="switch">            
+            <input type="checkbox" id="listening-switch" name="listening-switch" />
+            <span class="slider round"></span>
+        </label>
+    </div>
+
+    <div class="voiceEventControl">
+        Follow which event? <span class="pill">
+            <span class="pill-button">
+                <input type='radio' name='follow-style' value='interim' id='follow-style-interim'>
+                <label for='follow-style-interim'>Interim</label>
+            </span>
+            <span class="pill-button">
+                <input type='radio' name='follow-style' value='stable' id='follow-style-stable'>
+                <label for='follow-style-stable'>Stable</label>
+            </span>
+            <span class="pill-button">
+                <input type='radio' name='follow-style' value='final' id='follow-style-final'>
+                <label for='follow-style-final'>Final</label>
+            </span>
+        </span>
+    </div>
+
+    <div class="voiceEventControl">
+        <br />
+        <button id="reset-button" class="btn" type="button" onclick="resetState()" tabindex="-1">Reset</button>
+    </div>
+
+</div>
+
+<p>This example inserts dynamic action triggers into a block of text represented by orange dots. The listener follows along and triggers any action it passes. The orange underline is the target word currently being listened for and previously heard words are greyed out. Once you finish the full text, it will reset to the beginning.</p>
+
+<div class="voiceEventVisualizers">
+
+    <div class="voiceEventVisualizer">
+        <span class="header">Read Along</span>
+        <span class="content" id="story">
+            [img:jack-00.webp] Jack, [img:jack-01.webp] a poor country boy, trades the family cow for a handful of magic beans, 
+            which grow into a [img:jack-02.webp] massive, towering beanstalk reaching up into the clouds. 
+            Jack [img:jack-03.webp] climbs the beanstalk and finds himself near a [img:jack-04.webp] castle of an unfriendly giant. 
+            Jack goes [img:jack-05.webp] inside the castle and finds the giant’s wife in the kitchen.
+            The end.
+        </span>
+    </div>
+
+    <div class="voiceEventVisualizer">
+        <span class="header">Actions trigger an image to display</span>
+        <span class="content" id="reading-pages">
+            <img class="page" id="jack-00.webp" src="./images/jack-00.webp" />
+            <img class="page" id="jack-01.webp" src="./images/jack-01.webp" />
+            <img class="page" id="jack-02.webp" src="./images/jack-02.webp" />
+            <img class="page" id="jack-03.webp" src="./images/jack-03.webp" />
+            <img class="page" id="jack-04.webp" src="./images/jack-04.webp" />
+            <img class="page" id="jack-05.webp" src="./images/jack-05.webp" />
+        </span>
+    </div>
+
+    <div class="voiceEventVisualizer" id="speechVisualizer">
+        <span class="header">Speech</span>
+        <span class="content" id="speechVisualizerText"><br /></span>
+    </div>
+
+</div>
+<script>
+
+// some extra pre-processing functions
+var stemmer=function(){function i(){};function j(){console.log(Array.prototype.slice.call(arguments).join(" "))}var k={ational:"ate",tional:"tion",enci:"ence",anci:"ance",izer:"ize",bli:"ble",alli:"al",entli:"ent",eli:"e",ousli:"ous",ization:"ize",ation:"ate",ator:"ate",alism:"al",iveness:"ive",fulness:"ful",ousness:"ous",aliti:"al",iviti:"ive",biliti:"ble",logi:"log"},l={icate:"ic",ative:"",alize:"al",iciti:"ic",ical:"ic",ful:"",ness:""};return function(a,m){var d,c,g,b,h,e,f=a;e=m?j:i;if(3>a.length)return a;g=a.substr(0,1);"y"==g&&(a=g.toUpperCase()+a.substr(1));b=/^(.+?)(ss|i)es$/;c=/^(.+?)([^s])s$/;b.test(a)?(a=a.replace(b,"$1$2"),e("1a",b,a)):c.test(a)&&(a=a.replace(c,"$1$2"),e("1a",c,a));b=/^(.+?)eed$/;c=/^(.+?)(ed|ing)$/;b.test(a)?(c=b.exec(a),b=/^([^aeiou][^aeiouy]*)?[aeiouy][aeiou]*[^aeiou][^aeiouy]*/,b.test(c[1])&&(b=/.$/,a=a.replace(b,""),e("1b",b,a))):c.test(a)&&(c=c.exec(a),d=c[1],c=/^([^aeiou][^aeiouy]*)?[aeiouy]/,c.test(d)&&(a=d,e("1b",c,a),c=/(at|bl|iz)$/,h=/([^aeiouylsz])\1$/,d=/^[^aeiou][^aeiouy]*[aeiouy][^aeiouwxy]$/,c.test(a)?(a+="e",e("1b",c,a)):h.test(a)?(b=/.$/,a=a.replace(b,""),e("1b",h,a)):d.test(a)&&(a+="e",e("1b",d,a))));b=/^(.*[aeiouy].*)y$/;b.test(a)&&(c=b.exec(a),d=c[1],a=d+"i",e("1c",b,a));b=/^(.+?)(ational|tional|enci|anci|izer|bli|alli|entli|eli|ousli|ization|ation|ator|alism|iveness|fulness|ousness|aliti|iviti|biliti|logi)$/;b.test(a)&&(c=b.exec(a),d=c[1],c=c[2],b=/^([^aeiou][^aeiouy]*)?[aeiouy][aeiou]*[^aeiou][^aeiouy]*/,b.test(d)&&(a=d+k[c],e("2",b,a)));b=/^(.+?)(icate|ative|alize|iciti|ical|ful|ness)$/;b.test(a)&&(c=b.exec(a),d=c[1],c=c[2],b=/^([^aeiou][^aeiouy]*)?[aeiouy][aeiou]*[^aeiou][^aeiouy]*/,b.test(d)&&(a=d+l[c],e("3",b,a)));b=/^(.+?)(al|ance|ence|er|ic|able|ible|ant|ement|ment|ent|ou|ism|ate|iti|ous|ive|ize)$/;c=/^(.+?)(s|t)(ion)$/;b.test(a)?(c=b.exec(a),d=c[1],b=/^([^aeiou][^aeiouy]*)?[aeiouy][aeiou]*[^aeiou][^aeiouy]*[aeiouy][aeiou]*[^aeiou][^aeiouy]*/,b.test(d)&&(a=d,e("4",b,a))):c.test(a)&&(c=c.exec(a),d=c[1]+c[2],c=/^([^aeiou][^aeiouy]*)?[aeiouy][aeiou]*[^aeiou][^aeiouy]*[aeiouy][aeiou]*[^aeiou][^aeiouy]*/,c.test(d)&&(a=d,e("4",c,a)));b=/^(.+?)e$/;if(b.test(a)&&(c=b.exec(a),d=c[1],b=/^([^aeiou][^aeiouy]*)?[aeiouy][aeiou]*[^aeiou][^aeiouy]*[aeiouy][aeiou]*[^aeiou][^aeiouy]*/,c=/^([^aeiou][^aeiouy]*)?[aeiouy][aeiou]*[^aeiou][^aeiouy]*([aeiouy][aeiou]*)?$/,h=/^[^aeiou][^aeiouy]*[aeiouy][^aeiouwxy]$/,b.test(d)||c.test(d)&&!h.test(d)))a=d,e("5",b,c,h,a);b=/ll$/;c=/^([^aeiou][^aeiouy]*)?[aeiouy][aeiou]*[^aeiou][^aeiouy]*[aeiouy][aeiou]*[^aeiou][^aeiouy]*/;b.test(a)&&c.test(a)&&(b=/.$/,a=a.replace(b,""),e("5",b,c,a));"y"==g&&(a=g.toLowerCase()+a.substr(1));g={skis:"ski",skies:"sky",dying:"die",lying:"lie",tying:"tie",idly:"idl",gently:"gentl",ugly:"ugli",early:"earli",only:"onli",singly:"singl"};g[f]!=={}[f]&&(a=g[f],e("Special Word",a));-1!=="sky news howe atlas cosmos bias          andes inning outing canning herring          earring proceed exceed succeed".indexOf(f)&&(a=f,e("Special Word",a));b=/.*generate?s?d?(ing)?$/;b.test(f)&&(a+="at",e("Overstemmed",a));b=/.*general(ly)?$/;b.test(f)&&(a+="al",e("Overstemmed",a));b=/.*generic(ally)?$/;b.test(f)&&(a+="ic",e("Overstemmed",a));b=/.*generous(ly)?$/;b.test(f)&&(a+="ous",e("Overstemmed",a));b=/.*communit(ies)?y?/;b.test(f)&&(a+="iti",e("Overstemmed",a));return a}}();
+function metaphone(e){var a="X",r="0";return function(e){var i,b,k,o,f="",H=0;function S(e){f+=e}function A(a){return e.charAt(H+a).toUpperCase()}function C(e){return function(){return A(e)}}if(!(e=String(e||"")))return"";b=C(1),k=C(0),o=C(-1);for(;!u(k());){if(!k())return"";H++}switch(k()){case"A":"E"===b()?(S("E"),H+=2):(S("A"),H++);break;case"G":case"K":case"P":"N"===b()&&(S("N"),H+=2);break;case"W":"R"===b()?(S(b()),H+=2):"H"===b()?(S(k()),H+=2):t(b())&&(S("W"),H+=2);break;case"X":S("S"),H++;break;case"E":case"I":case"O":case"U":S(k()),H++}for(;k();)if(i=1,!u(k())||k()===o()&&"C"!==k())H+=i;else{switch(k()){case"B":"M"!==o()&&S("B");break;case"C":n(b())?"I"===b()&&"A"===A(2)?S(a):"S"!==o()&&S("S"):"H"===b()?(S(a),i++):S("K");break;case"D":"G"===b()&&n(A(2))?(S("J"),i++):S("T");break;case"G":"H"===b()?c(A(-3))||"H"===A(-4)||(S("F"),i++):"N"===b()?!u(A(2))||"E"===A(2)&&"D"===A(3)||S("K"):n(b())&&"G"!==o()?S("J"):S("K");break;case"H":t(b())&&!s(o())&&S("H");break;case"K":"C"!==o()&&S("K");break;case"P":"H"===b()?S("F"):S("P");break;case"Q":S("K");break;case"S":"I"!==b()||"O"!==A(2)&&"A"!==A(2)?"H"===b()?(S(a),i++):S("S"):S(a);break;case"T":"I"!==b()||"O"!==A(2)&&"A"!==A(2)?"H"===b()?(S(r),i++):"C"===b()&&"H"===A(2)||S("T"):S(a);break;case"V":S("F");break;case"W":t(b())&&S("W");break;case"X":S("KS");break;case"Y":t(b())&&S("Y");break;case"Z":S("S");break;case"F":case"J":case"L":case"M":case"N":case"R":S(k())}H+=i}return f}(e);function c(e){return"B"===(e=i(e))||"D"===e||"H"===e}function n(e){return"E"===(e=i(e))||"I"===e||"Y"===e}function t(e){return"A"===(e=i(e))||"E"===e||"I"===e||"O"===e||"U"===e}function s(e){return"C"===(e=i(e))||"G"===e||"P"===e||"S"===e||"T"===e}function u(e){var a=function(e){return i(e).charCodeAt(0)}(e);return a>=65&&a<=90}function i(e){return String(e).charAt(0).toUpperCase()}};
+
+// track where in the text we are
+var currentWordIndex = 0;
+var wordIndex = [];
+var metaIndex = {};
+var actionIndex = {};
+var triggeredActions = new Set();
+
+function setupTextForFollowing( id )
+{
+    var source = document.getElementById(id);
+    if ( !source ) { return; }
+
+    wordIndex = [];
+    metaIndex = {};
+
+    processedText = "";
+
+    actionRegex = /\[img\:([^\]]*)\]/;
+
+    let lines = source.innerHTML.split(/\n+/).filter(x => x);
+    let i = 0;
+    for ( let l=0; l < lines.length; l++ )
+    {
+        let tokens = lines[l].split(/\s+/).filter(x => x);
+        for ( let t=0; t < tokens.length; t++ )
+        {
+            let token = tokens[t]
+            if ( token[0] == '[' ) {
+                let match = actionRegex.exec(token);
+                let img = match ? match[1] : null;                
+                if ( img ) {
+                    actionIndex[i] = { i:i, img:img, word:token };
+                }
+                processedText += '<span class="action-trigger" id="action-'+ i +'" index="'+ i +'">•</span> ';
+            } else {
+                let clean = token.replace(/^\W*(.*?)\W*$/, '$1');
+                let stem = stemmer(clean);
+                let meta = metaphone(stem);
+                wordIndex[i] = { i:i, word:clean, stem:stem, meta:meta };
+                if ( !(meta in metaIndex) ) { metaIndex[meta] = {}; }
+                metaIndex[meta][i] = wordIndex[i];
+                
+                processedText += '<span id="word-'+ i +'" index="'+ i +'" stem="'+ stem +'" meta="'+ meta +'">'+ token +'</span> ';
+             
+                i++;
+            }
+        }
+        processedText += "\n"
+    }
+    source.innerHTML = processedText;
+    // sort each index list
+    for (let m in metaIndex) {
+        metaIndex[m] = Object.values(metaIndex[m]).sort((a, b) => a.i - b.i);
+    }
+}
+
+function getActionAtIndex( wordIndex )
+{
+    // case where this specific index has an action
+    if ( actionIndex.hasOwnProperty(wordIndex) ) {
+        return actionIndex[wordIndex];
+    }
+    // case where we identify the most recent action that 
+    // hould have fired if we had progressed linearly through the text
+    for (let i = wordIndex; i >= 0; i--) {
+        if (actionIndex.hasOwnProperty(i)) {
+            return actionIndex[i];
+        }
+    }
+    return null;
+}
+
+function triggerActionAtIndex( wordIndex )
+{
+    let action = getActionAtIndex(wordIndex);
+    if ( action && !triggeredActions.has(action.i) ) {
+        triggerAction(action);
+    }
+}
+function triggerAction( action )
+{
+    if ( action ) {
+        document.querySelectorAll('#reading-pages img.page').forEach( (elem) => {
+            if ( elem.id == action.img ) {
+                elem.classList.add('current');
+            } else {
+                elem.classList.remove('current');
+            }
+        });
+        triggeredActions.add(action.i);
+    }
+}
+
+function resetState()
+{
+    for ( let i = 0; i < wordIndex.length; i++ ) {
+        let currElem = document.getElementById('word-'+i);
+        if ( currElem ) {
+            currElem.classList.remove("heard");
+            currElem.classList.remove("listening");
+        }
+    }
+    currentWordIndex = 0
+    let nextElem = document.getElementById('word-'+currentWordIndex)
+    if ( nextElem ) {
+        nextElem.classList.add("listening");
+    }
+
+    triggeredActions.clear();
+    triggerActionAtIndex(0);
+}
+
+function handleVoiceResult( event )
+{
+    let heard = event.detail.new.trim().split(/\s+/).filter(x => x);
+    if ( heard.length == 0 ) {
+        return;
+    }
+
+    let startingWordIndex = currentWordIndex;
+    let distanceWindow = 3;
+    let bestMatchingWordIndex = false;
+
+    /// start with a target word, and listen for nearby words
+    /// use a window just in case a word in missed or skipped or flubbed.
+    /// assume words are being read sequentially
+    for( let w = 0; w < heard.length; w++ ) {
+        let word = heard[w];
+        let stem = stemmer(word);
+        let meta = metaphone(stem);
+        let matchingWordIndex = false;
+
+        if ( meta && metaIndex.hasOwnProperty(meta) ) {
+            // of all the matching metaphones, find the closest match to the current word
+            matches = new Set()
+            for ( let s in metaIndex[meta] ) {
+                let distance = metaIndex[meta][s].i - startingWordIndex;
+                if ( distance >= 0 && distance < distanceWindow ) {
+                    matches.add(metaIndex[meta][s].i)
+                }
+            }
+            if ( matches.size > 0 ) {
+                bestMatchingWordIndex = Math.min.apply(this, [...matches]);
+                startingWordIndex = bestMatchingWordIndex;
+            }
+        }
+    }
+
+    if ( bestMatchingWordIndex === false ) {
+        return;
+    }
+
+    nextWordIndex = bestMatchingWordIndex+1;
+    if ( bestMatchingWordIndex >= currentWordIndex ) {
+        for ( let i = currentWordIndex; i <= bestMatchingWordIndex; i++ ) {
+            let currElem = document.getElementById('word-'+i);
+            if ( currElem ) {
+                currElem.classList.add("heard");
+                triggerActionAtIndex(i);
+                currElem.classList.remove("listening");
+            }
+        }
+        var nextElem = document.getElementById('word-'+nextWordIndex)
+        if ( nextElem ) {
+            nextElem.classList.add("listening");
+        }
+        currentWordIndex = nextWordIndex;
+    }
+    if ( nextWordIndex >= wordIndex.length ) {
+        resetState()
+    }
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    setupTextForFollowing('story');
+    resetState()
+});
+
+</script>
+
+
+</body>
+
