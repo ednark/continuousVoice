@@ -58,6 +58,7 @@ class ContinuousVoiceService {
             this.checkOnDevice();
         } else {
             console.log('Nope, no speech support');
+            this.onDeviceStatus = 'unsupported';
         }
     }
 
@@ -374,6 +375,9 @@ class ContinuousVoiceService {
     }
 
     dispatchEvent(eventName, detail) {
+        if (!this.recognition) {
+            return;
+        }
         const event = new CustomEvent(eventName, { detail });
         this.recognition.dispatchEvent(event);
     }

@@ -1,0 +1,151 @@
+<html>
+<head>
+    <link rel="icon" type="image/png" href="data:image/png;base64,iVBORw0KGgo=">
+
+    <script src="./continuousVoice.js"></script>
+    <script src="./continuous-voice-ui.js"></script>
+    <link rel="stylesheet" href="./continuous-voice-ui.css" />
+    <style>
+        .onDevicePanel {
+            margin-top: 1em;
+            border: .2em solid var(--ui-main-color);
+            border-radius: 5px;
+        }
+        .onDevicePanel .header {
+            display: block;
+            padding: .5em;
+            background-color: var(--ui-main-color);
+        }
+        .onDevicePanel .content {
+            display: flex;
+            align-items: center;
+            gap: 1em;
+            flex-wrap: wrap;
+            padding: .5em;
+        }
+        .badge {
+            display: inline-block;
+            padding: .2em .7em;
+            border-radius: 12px;
+            background: #333;
+            border: 1px solid #555;
+        }
+        .badge.ready       { background: #1c3a1c; border-color: var(--ui-on-color); color: #7ee787; }
+        .badge.downloading { background: #3a2e14; border-color: var(--ui-highlight-color); color: #ffa657; }
+        .badge.downloadable { background: #14303a; border-color: dodgerblue; color: #79c0ff; }
+        .badge.unavailable, .badge.unsupported, .badge.unknown { background: #333; color: #999; }
+    </style>
+</head>
+<body>
+
+<h2>On-Device Recognition</h2>
+
+<p>This demo prefers <strong>on-device recognition</strong> (Chrome 139+). When the speech model
+runs locally, your audio never leaves this device and recognition keeps working offline.
+The service never downloads the language pack on its own &mdash; the install is triggered
+explicitly by the button below, from a user gesture.</p>
+
+<div class="voiceEventControlPanel">
+
+    <div class="voiceEventControl">
+        <label for="listening-switch">
+            Listening
+        </label>
+        <label for="listening-switch" id="listening-switch-label" class="switch">
+            <input type="checkbox" id="listening-switch" name="listening-switch" />
+            <span class="slider round"></span>
+        </label>
+    </div>
+
+</div>
+
+<div class="onDevicePanel">
+    <span class="header">Recognition Processing</span>
+    <span class="content">
+        <span>status:</span>
+        <span class="badge unknown" id="onDeviceStatusBadge">checking&hellip;</span>
+        <button class="btn" id="enableOnDeviceButton" style="display:none;">
+            Install language pack &amp; switch to on-device
+        </button>
+        <span id="onDeviceStatusNote"></span>
+    </span>
+</div>
+
+<p>Just start talking after switching Listening on. The <code>new</code> field of each event
+contains only the newest words, which makes local incremental transcription easy to follow.</p>
+
+<div class="voiceEventVisualizers">
+    <div class="voiceEventVisualizer" id="interimVisualizer">
+        <span class="header">Interim Result</span>
+        <span class="content" id="interimVisualizerText">&nbsp;</span>
+    </div>
+    <div class="voiceEventVisualizer" id="stableVisualizer">
+        <span class="header">Stable Result</span>
+        <span class="content" id="stableVisualizerText">&nbsp;</span>
+    </div>
+    <div class="voiceEventVisualizer" id="finalVisualizer">
+        <span class="header">Final Result</span>
+        <span class="content" id="finalVisualizerText">&nbsp;</span>
+    </div>
+    <div class="voiceEventVisualizer" id="logVisualizer">
+        <span class="header">Log</span>
+        <span class="content" id="logVisualizerText"></span>
+    </div>
+</div>
+
+<script>
+    const STATUS_BADGE_TEXT = {
+        unknown:     'checking\u2026',
+        unsupported: 'not supported in this browser',
+        unavailable: 'unavailable',
+        downloadable: 'language pack available to install',
+        downloading: 'downloading language pack\u2026',
+        ready:       'running on-device (offline, private)'
+    };
+    const STATUS_NOTE = {
+        unknown:     '',
+        unsupported: 'This browser does not expose the on-device speech API. Cloud recognition is being used instead.',
+        unavailable: 'On-device recognition could not be used for this language. Cloud recognition is being used instead.',
+        downloadable: 'Click the button to download the language pack (one time, ~100+ MB). After installing, recognition runs locally.',
+        downloading: 'The language pack is downloading. Recognition stays on cloud until it finishes.',
+        ready:       'Speech is being transcribed entirely on this device.'
+    };
+
+    function renderOnDeviceStatus(status) {
+        const badge = document.getElementById('onDeviceStatusBadge');
+        const button = document.getElementById('enableOnDeviceButton');
+        const note = document.getElementById('onDeviceStatusNote');
+        if (!badge) return;
+
+        const safeStatus = STATUS_BADGE_TEXT.hasOwnProperty(status) ? status : 'unknown';
+        badge.className = 'badge ' + safeStatus;
+        badge.textContent = STATUS_BADGE_TEXT[safeStatus];
+        note.textContent = STATUS_NOTE[safeStatus] || '';
+        button.style.display = (safeStatus === 'downloadable') ? 'inline-block' : 'none';
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+        // follow every status transition the service announces
+        ContinuousVoice.addEventListener('onDeviceStatus', (event) => {
+            renderOnDeviceStatus(event.detail.status);
+        });
+        // and render whatever the initial (async) check already concluded
+        renderOnDeviceStatus(ContinuousVoice.onDeviceStatus);
+
+        // explicit user gesture: download the pack and switch to local processing
+        const enableButton = document.getElementById('enableOnDeviceButton');
+        enableButton.addEventListener('click', async () => {
+            enableButton.disabled = true;
+            renderOnDeviceStatus('downloading');
+            const ok = await ContinuousVoice.enableOnDevice();
+            enableButton.disabled = false;
+            renderOnDeviceStatus(ContinuousVoice.onDeviceStatus);
+            if (ok) {
+                enableButton.textContent = 'On-device recognition enabled';
+            }
+        });
+    });
+</script>
+
+</body>
+</html>
