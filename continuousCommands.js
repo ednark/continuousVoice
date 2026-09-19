@@ -153,6 +153,14 @@ class ContinuousCommandsService extends ContinuousVoiceService {
         }
         return foundAt;
     }
+    // label for a found command in run results; pattern-based matches
+    // (from continuousCommandsRegex.js) carry their own text
+    describeMatch(extractedCommand) {
+        if (extractedCommand.text !== undefined) {
+            return extractedCommand.text;
+        }
+        return extractedCommand.command.triggers[0].text;
+    }
     runCommandsInText(text) {
         // Get commands from the stable text
         const extractedCommands = this.findCommandsInText( text );
@@ -169,7 +177,7 @@ class ContinuousCommandsService extends ContinuousVoiceService {
             if (!previouslyRunTranscriptCommands.includes(extractedCommand.startTokenIndex)) {
                 // Execute the command
                 commandResults.push({
-                    command: extractedCommand.command.triggers[0].text,
+                    command: this.describeMatch(extractedCommand),
                     result:this.executeCommand(extractedCommand)
                 });
                 // Remember that we executed this command for this transcript position
@@ -203,7 +211,7 @@ class ContinuousCommandsService extends ContinuousVoiceService {
             if (!runCommands.has(extractedCommand.startTokenIndex)) {
                 // Execute the command
                 commandResults.push({
-                    command: extractedCommand.command.triggers[0].text,
+                    command: this.describeMatch(extractedCommand),
                     result:this.executeCommand(extractedCommand)
                 });
                 // Remember that we executed this command for this transcript position

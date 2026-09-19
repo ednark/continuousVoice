@@ -1,0 +1,166 @@
+<html>
+<head>
+    <meta charset="utf-8" />
+    <link rel="icon" type="image/png" href="data:image/png;base64,iVBORw0KGgo=">
+
+    <script src="./continuousVoice.js"></script>
+    <script src="./continuousCommands.js"></script>
+    <script src="./continuousCommandsRegex.js"></script>
+    <script src="./continuous-voice-ui.js"></script>
+    <link rel="stylesheet" href="./continuous-voice-ui.css" />
+    <style>
+        .commandList { padding-left: 0; list-style: none; }
+        .commandList li { margin-bottom: .6em; }
+        .commandList code { display: block; }
+        .commandList code.pattern { color: #ffa657; }
+        .commandList code.regex { font-size: .85em; color: #999; }
+        .paramTag { color: lightgreen; }
+    </style>
+</head>
+<body>
+
+<h2>Pattern Commands</h2>
+
+<p>Commands can be registered as readable <strong>patterns</strong> instead of literal word lists.
+Literal words are matched phonetically (misheard words still match), while the special tokens
+give you configuration-style control over each trigger:</p>
+
+<ul>
+    <li><code class="block"><span class="token key">word</span>                    matched phonetically</code></li>
+    <li><code class="block"><span class="token punctuation">(</span><span class="token key">word</span><span class="token punctuation">)?</span>              optional word or group</code></li>
+    <li><code class="block"><span class="token punctuation">(</span><span class="token key">word</span><span class="token punctuation">|</span><span class="token key">other</span><span class="token punctuation">)</span>         required choice between alternatives</code></li>
+    <li><code class="block"><span class="token punctuation">(</span><span class="token key">word</span><span class="token punctuation">|</span><span class="token key">other</span><span class="token punctuation">)?</span>        optional choice between alternatives</code></li>
+    <li><code class="block"><span class="token string">$name</span>                  captures one word as <span class="token string">params.name</span></code></li>
+    <li><code class="block"><span class="token string">*name</span>                   captures all remaining words as <span class="token string">params.name</span></code></li>
+</ul>
+
+<div class="voiceEventControlPanel">
+    <div class="voiceEventControl">
+        <label for="listening-switch">Listening</label>
+        <label for="listening-switch" id="listening-switch-label" class="switch">
+            <input type="checkbox" id="listening-switch" name="listening-switch" />
+            <span class="slider round"></span>
+        </label>
+    </div>
+</div>
+
+<div class="voiceEventVisualizer" id="testVisualizer">
+    <span class="header">Test a phrase (no microphone needed)</span>
+    <span class="content">
+        <input type="text" id="testInput" value="please say hello to the parrot" style="flex:1; min-width: 16em;" />
+        <button class="btn" id="testButton">Test</button>
+    </span>
+    <span class="content" id="testOutput">&nbsp;</span>
+</div>
+
+<div class="voiceEventVisualizer" id="commandLogVisualizer">
+    <span class="header">Command Log (fires while listening)</span>
+    <span class="content" id="commandLogText"></span>
+</div>
+
+<div class="voiceEventVisualizer">
+    <span class="header">Configured Commands</span>
+    <span class="content">
+        <ul class="commandList" id="commandList"></ul>
+    </span>
+</div>
+
+<script>
+    // =========================================================
+    // EDIT COMMANDS HERE
+    //
+    // Each entry is { pattern, action }.
+    //   pattern - the trigger syntax documented above
+    //   action  - function(params, speechEvent); its return value
+    //             is shown in the command log
+    // =========================================================
+    const COMMAND_PATTERNS = [
+        {
+            pattern: 'say hello (to)? $who',
+            action: (params) => `Hello, ${params.who}!`
+        },
+        {
+            pattern: 'roll (a)? dice',
+            action: () => 1 + Math.floor(Math.random() * 6)
+        },
+        {
+            pattern: '(please)? move *direction',
+            action: (params) => `Moving ${params.direction}`
+        },
+        {
+            pattern: 'go (to|towards) the kitchen',
+            action: () => 'Off to the kitchen.'
+        },
+        {
+            pattern: 'what time is it',
+            action: () => new Date().toLocaleTimeString()
+        },
+    ];
+    // =========================================================
+
+    // a dedicated command service; the global ContinuousVoice still
+    // handles the microphone and speech events
+    const PatternCommands = new ContinuousRegexCommandsService();
+    COMMAND_PATTERNS.forEach(entry => PatternCommands.addRegexCommand(entry.pattern, entry.action));
+
+    function logCommand(pattern, result) {
+        const logArea = document.getElementById('commandLogText');
+        if (!logArea) return;
+        const entry = document.createElement('div');
+        entry.innerHTML = 'matched <span class="paramTag">' + pattern + '</span>'
+            + ' &rarr; <strong>' + result + '</strong>';
+        logArea.prepend(entry);
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+
+        // describe the compiled configuration so it is easy to modify
+        const list = document.getElementById('commandList');
+        PatternCommands.regexCommands.forEach(command => {
+            const item = document.createElement('li');
+            const paramNames = [...command.pattern.matchAll(/[\$*](\w+)/g)].map(m => m[1]);
+            item.innerHTML = '<code class="pattern">' + command.pattern + '</code>'
+                + (paramNames.length ? '<code>params: <span class="paramTag">' + paramNames.join(', ') + '</span></code>' : '')
+                + '<code class="regex">' + command.regex.source + '</code>';
+            list.appendChild(item);
+        });
+
+        // offline test harness: type a phrase, see what matches
+        const testButton = document.getElementById('testButton');
+        const testInput = document.getElementById('testInput');
+        const testOutput = document.getElementById('testOutput');
+        function runTest() {
+            const phrase = testInput.value.trim();
+            if (!phrase) return;
+            const found = PatternCommands.findCommandsInText(phrase);
+            if (found.length === 0) {
+                testOutput.innerHTML = 'no commands matched';
+                return;
+            }
+            testOutput.innerHTML = found.map(foundCommand => {
+                const paramsJson = JSON.stringify(foundCommand.params);
+                return 'matched <span class="paramTag">' + PatternCommands.describeMatch(foundCommand) + '</span>'
+                    + (paramsJson !== '{}' ? ' with ' + paramsJson : '');
+            }).join('<br />');
+        }
+        testButton.addEventListener('click', runTest);
+        testInput.addEventListener('keydown', (event) => {
+            if (event.key === 'Enter') runTest();
+        });
+
+        // live: run commands against continuous speech events.
+        // runCommandsInSpeechEvent dedupes per transcript, so a phrase
+        // heard across interim and final events only fires once.
+        const handleSpeechEvent = (event) => {
+            const results = PatternCommands.runCommandsInSpeechEvent(event);
+            results.forEach(result => {
+                logCommand(result.command, result.result);
+            });
+        };
+        ContinuousVoice.addEventListener('interimResult', handleSpeechEvent);
+        ContinuousVoice.addEventListener('finalResult', handleSpeechEvent);
+    });
+</script>
+
+</body>
+</html>
