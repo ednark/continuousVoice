@@ -28,13 +28,19 @@ There are other nice libraries like [Annyang](https://www.talater.com/annyang/) 
 
 ## On-device recognition (Chrome 139+)
 
-On supported browsers the service automatically checks for on-device (offline) recognition using `SpeechRecognition.available()`, installs the language pack if needed, and switches the recognizer to local processing so audio never leaves the device. It can be disabled with:
+The service automatically *detects* on-device (offline) recognition capability using `SpeechRecognition.available()`. It never downloads anything on its own — when the status is `'downloadable'`, install the language pack explicitly, ideally from a click handler so the browser allows it:
 
 ```js
-const voice = new ContinuousVoiceService('en-US', { preferOnDevice: false });
+const voice = new ContinuousVoiceService('en-US', { preferOnDevice: false }); // opt out entirely
+
+button.addEventListener('click', async () => {
+    if (await voice.enableOnDevice()) {
+        // recognition now runs locally: offline, audio never leaves the device
+    }
+});
 ```
 
-The current status is available on `ContinuousVoice.onDeviceStatus` (`'unsupported'`, `'unavailable'`, `'downloading'`, `'ready'`) and as `'onDeviceStatus'` custom events. Unsupported browsers silently continue using cloud recognition.
+The current status is available on `ContinuousVoice.onDeviceStatus` (`'unsupported'`, `'unavailable'`, `'downloadable'`, `'downloading'`, `'ready'`) and as `'onDeviceStatus'` custom events. Unsupported browsers silently continue using cloud recognition.
 
 ## Playback guard
 

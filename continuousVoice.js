@@ -55,7 +55,7 @@ class ContinuousVoiceService {
 
         if (this.speechRecognitionSupported()) {
             this.initRecognition();
-            this.initOnDevice();
+            this.checkOnDevice();
         } else {
             console.log('Nope, no speech support');
         }
@@ -67,41 +67,79 @@ class ContinuousVoiceService {
 
     /* start on-device recognition : chrome 139+ can process speech locally,
        keeping audio private and working offline. unsupported browsers
-       silently continue using the cloud recognition service. */
+       silently continue using the cloud recognition service. the language
+       pack is never downloaded automatically - check onDeviceStatus and
+       call enableOnDevice() (ideally from a user gesture) to install it. */
     onDeviceSupported() {
         return typeof SpeechRecognition === 'function' && typeof SpeechRecognition.available === 'function';
     }
 
-    async initOnDevice() {
+    // passive check only: never downloads anything
+    async checkOnDevice() {
         if (!this.preferOnDevice || !this.onDeviceSupported()) {
             this.onDeviceStatus = 'unsupported';
-            return false;
+            this.dispatchEvent('onDeviceStatus', { status: this.onDeviceStatus });
+            return this.onDeviceStatus;
         }
         const options = { langs: [this.lang || 'en-US'], processLocally: true };
         try {
             let status = await SpeechRecognition.available(options);
-            if (status === 'downloadable' || status === 'downloading') {
-                this.onDeviceStatus = 'downloading';
-                this.dispatchEvent('onDeviceStatus', { status: this.onDeviceStatus });
-                const installed = await SpeechRecognition.install(options);
-                status = installed ? 'downloaded' : 'unavailable';
-            }
-            if (status === 'downloaded' || status === 'available') {
+            if (status === 'available' || status === 'downloaded') {
                 this.onDeviceStatus = 'ready';
                 // read at start() time, so it is safe to set while not listening
+                try {
+                    this.recognition.processLocally = true;
+                } catch (ex) { }
+            } else if (status === 'downloadable') {
+                this.onDeviceStatus = 'downloadable';
+            } else {
+                this.onDeviceStatus = 'unavailable';
+            }
+        } catch (ex) {
+            // the API exists but the check failed this time;
+            // the cloud path still works either way
+            this.onDeviceStatus = 'unavailable';
+        }
+        this.dispatchEvent('onDeviceStatus', { status: this.onDeviceStatus });
+        return this.onDeviceStatus;
+    }
+
+    // download the language pack and switch to local processing.
+    // call from a user gesture (click/tap) so the browser allows the install.
+    async enableOnDevice() {
+        if (!this.onDeviceSupported()) {
+            this.onDeviceStatus = 'unsupported';
+            this.dispatchEvent('onDeviceStatus', { status: this.onDeviceStatus });
+            return false;
+        }
+        const options = { langs: [this.lang || 'en-US'], processLocally: true };
+        try {
+            if (this.onDeviceStatus !== 'ready') {
+                let status = await SpeechRecognition.available(options);
+                if (status === 'downloadable' || status === 'downloading') {
+                    this.onDeviceStatus = 'downloading';
+                    this.dispatchEvent('onDeviceStatus', { status: this.onDeviceStatus });
+                    const installed = await SpeechRecognition.install(options);
+                    status = installed ? 'downloaded' : 'unavailable';
+                }
+                if (status === 'downloaded' || status === 'available') {
+                    this.onDeviceStatus = 'ready';
+                } else {
+                    this.onDeviceStatus = 'unavailable';
+                }
+            }
+            if (this.onDeviceStatus === 'ready') {
                 try {
                     this.recognition.processLocally = true;
                 } catch (ex) { }
                 this.dispatchEvent('onDeviceStatus', { status: this.onDeviceStatus });
                 return true;
             }
-            this.onDeviceStatus = 'unavailable';
             this.dispatchEvent('onDeviceStatus', { status: this.onDeviceStatus });
             return false;
         } catch (ex) {
-            // the API exists but a check or install failed this time;
-            // the cloud path still works either way
             this.onDeviceStatus = 'unavailable';
+            this.dispatchEvent('onDeviceStatus', { status: this.onDeviceStatus });
             return false;
         }
     }
