@@ -7,7 +7,10 @@ class ContinuousCommandsService extends ContinuousVoiceService {
         this.commandCounter = 0
         this.commands = []
         this.longestTrigger = 0
-        this.previouslyRunTranscriptCommands = []
+        // transcriptId -> Set of token indexes already run for that transcript;
+        // a bounded Map so long listening sessions do not grow without limit
+        this.previouslyRunTranscriptCommands = new Map()
+        this.maxTrackedTranscripts = 10
     }
 
     metaphone(e){var a="X",r="0";return function(e){var i,b,k,o,f="",H=0;function S(e){f+=e}function A(a){return e.charAt(H+a).toUpperCase()}function C(e){return function(){return A(e)}}if(!(e=String(e||"")))return"";b=C(1),k=C(0),o=C(-1);for(;!u(k());){if(!k())return"";H++}switch(k()){case"A":"E"===b()?(S("E"),H+=2):(S("A"),H++);break;case"G":case"K":case"P":"N"===b()&&(S("N"),H+=2);break;case"W":"R"===b()?(S(b()),H+=2):"H"===b()?(S(k()),H+=2):t(b())&&(S("W"),H+=2);break;case"X":S("S"),H++;break;case"E":case"I":case"O":case"U":S(k()),H++}for(;k();)if(i=1,!u(k())||k()===o()&&"C"!==k())H+=i;else{switch(k()){case"B":"M"!==o()&&S("B");break;case"C":n(b())?"I"===b()&&"A"===A(2)?S(a):"S"!==o()&&S("S"):"H"===b()?(S(a),i++):S("K");break;case"D":"G"===b()&&n(A(2))?(S("J"),i++):S("T");break;case"G":"H"===b()?c(A(-3))||"H"===A(-4)||(S("F"),i++):"N"===b()?!u(A(2))||"E"===A(2)&&"D"===A(3)||S("K"):n(b())&&"G"!==o()?S("J"):S("K");break;case"H":t(b())&&!s(o())&&S("H");break;case"K":"C"!==o()&&S("K");break;case"P":"H"===b()?S("F"):S("P");break;case"Q":S("K");break;case"S":"I"!==b()||"O"!==A(2)&&"A"!==A(2)?"H"===b()?(S(a),i++):S("S"):S(a);break;case"T":"I"!==b()||"O"!==A(2)&&"A"!==A(2)?"H"===b()?(S(r),i++):"C"===b()&&"H"===A(2)||S("T"):S(a);break;case"V":S("F");break;case"W":t(b())&&S("W");break;case"X":S("KS");break;case"Y":t(b())&&S("Y");break;case"Z":S("S");break;case"F":case"J":case"L":case"M":case"N":case"R":S(k())}H+=i}return f}(e);function c(e){return"B"===(e=i(e))||"D"===e||"H"===e}function n(e){return"E"===(e=i(e))||"I"===e||"Y"===e}function t(e){return"A"===(e=i(e))||"E"===e||"I"===e||"O"===e||"U"===e}function s(e){return"C"===(e=i(e))||"G"===e||"P"===e||"S"===e||"T"===e}function u(e){var a=function(e){return i(e).charCodeAt(0)}(e);return a>=65&&a<=90}function i(e){return String(e).charAt(0).toUpperCase()}};
@@ -165,9 +168,9 @@ class ContinuousCommandsService extends ContinuousVoiceService {
         for (let extractedCommand of extractedCommands) {
             if (!previouslyRunTranscriptCommands.includes(extractedCommand.startTokenIndex)) {
                 // Execute the command
-                commandResults.push({ 
-                    command:extractedCommand.text, 
-                    result:this.executeCommand(extractedCommand) 
+                commandResults.push({
+                    command: extractedCommand.command.triggers[0].text,
+                    result:this.executeCommand(extractedCommand)
                 });
                 // Remember that we executed this command for this transcript position
                 previouslyRunTranscriptCommands.push(extractedCommand.startTokenIndex);
@@ -184,20 +187,27 @@ class ContinuousCommandsService extends ContinuousVoiceService {
         }
 
         // Ensure we track previously run commands in this transcript id
-        if (!this.previouslyRunTranscriptCommands[event.detail.id]) {
-            this.previouslyRunTranscriptCommands[event.detail.id] = new Set();
+        if (!this.previouslyRunTranscriptCommands.has(event.detail.id)) {
+            this.previouslyRunTranscriptCommands.set(event.detail.id, new Set());
+            // prune the oldest transcripts so the map stays bounded
+            while (this.previouslyRunTranscriptCommands.size > this.maxTrackedTranscripts) {
+                let oldest = this.previouslyRunTranscriptCommands.keys().next().value;
+                this.previouslyRunTranscriptCommands.delete(oldest);
+            }
         }
+        let runCommands = this.previouslyRunTranscriptCommands.get(event.detail.id);
+
         // Process each command
         let commandResults = [];
         for (let extractedCommand of extractedCommands) {
-            if (!this.previouslyRunTranscriptCommands[event.detail.id].has(extractedCommand.startTokenIndex)) {
+            if (!runCommands.has(extractedCommand.startTokenIndex)) {
                 // Execute the command
-                commandResults.push({ 
-                    command:extractedCommand.text, 
-                    result:this.executeCommand(extractedCommand) 
+                commandResults.push({
+                    command: extractedCommand.command.triggers[0].text,
+                    result:this.executeCommand(extractedCommand)
                 });
                 // Remember that we executed this command for this transcript position
-                this.previouslyRunTranscriptCommands[event.detail.id].add(extractedCommand.startTokenIndex);
+                runCommands.add(extractedCommand.startTokenIndex);
             }
         }
         return commandResults
