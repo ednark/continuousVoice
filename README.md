@@ -53,6 +53,40 @@ utterance.onend   = () => ContinuousVoice.resumeAfterPlayback();
 
 An explicit `ContinuousVoice.stopListening()` always wins and cancels any pending resume.
 
+## Pattern commands
+
+`continuousCommandsRegex.js` adds configurable triggers on top of `ContinuousCommands`. Commands are authored as readable patterns instead of literal word lists — literal words match phonetically, so misheard words still trigger:
+
+```html
+<script src="./continuousVoice.js"></script>
+<script src="./continuousCommands.js"></script>
+<script src="./continuousCommandsRegex.js"></script>
+```
+
+```js
+const commands = new ContinuousRegexCommandsService();
+
+commands.addRegexCommand('say hello (to)? $who', (params) => {
+    return `Hello, ${params.who}!`;
+});
+commands.addRegexCommand('go (to|towards) the kitchen', () => {
+    return 'Off to the kitchen.';
+});
+commands.addRegexCommand('(please)? move *direction', (params) => {
+    return `Moving ${params.direction}`;
+});
+```
+
+| Token | Meaning |
+| :--- | :--- |
+| `word` | matched phonetically |
+| `(word)?` | optional word or group |
+| `(a\|b)` / `(a\|b)?` | required / optional choice |
+| `$name` | captures one word as `params.name` |
+| `*name` | captures all remaining words as `params.name` |
+
+Patterns compile once into regexes with named capture groups keeping the author's parameter names, and matches are mapped back to the original spoken words. See [pattern-commands.html](https://ednark.github.io/continuousVoice/pattern-commands.html) for a live workspace with a no-microphone phrase tester.
+
 Several usage examples are included starting from the main index.html.
 
 Browser support for the Web Speech API has not been as broad as could be, and only Chrome works for all the examples on all the systems.
