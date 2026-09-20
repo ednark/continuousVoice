@@ -2,7 +2,7 @@
 
 A JavaScript Library that use Web Speech API to continuously listen for events. Just include the library directly in the head of you html document and attach a listener.
 
-Visit the [Index page](https://ednark.github.io/continuousVoice/) to see some cool example usage.
+Visit the [Index page](https://ednark.github.io/continuousVoice/) — it doubles as documentation for the speech event format and hosts the demo list below.
 
 ```html
 <html>
@@ -25,6 +25,31 @@ Visit the [Index page](https://ednark.github.io/continuousVoice/) to see some co
 ContinuousVoice is a thin wrapper around the Web Speech API's speech recognition events. It exposes three new custom events: interimResults, stableResults, and finalResults. You can listen for these events and use them to trigger different behaviors.
 
 There are other nice libraries like [Annyang](https://www.talater.com/annyang/) that make voice integration easy, but they are not targeted towards handling immediate commands found during ongoing continuous speech. They usually have to wait for the speech to stop in order to properly process things. This library is an attempt to handle the special continuous listening case.
+
+## Demos
+
+All demos are hosted on GitHub Pages. They use live microphone input, so grant access when prompted.
+
+### ContinuousVoice.js demos
+
+These demos need only `continuousVoice.js` and show what the three speech events look like in real applications:
+
+- [Events Monitor](https://ednark.github.io/continuousVoice/events-monitor.html) — Visualizes the stream of interim, stable, and final speech events as they fire.
+- [Closed Captions](https://ednark.github.io/continuousVoice/closed-captions.html) — Displays speech in a TV-style overlay at the bottom of the screen.
+- [Follow Lyrics](https://ednark.github.io/continuousVoice/follow-lyrics.html) — Follows along while you read or sing lyrics, highlighting progress line by line.
+- [Reading Actions](https://ednark.github.io/continuousVoice/reading-actions.html) — Follows along while you read a story and triggers actions when specific points in the text are reached.
+
+### ContinuousCommands.js demos
+
+These demos additionally use `continuousCommands.js` to trigger registered functions when key phrases are detected:
+
+- [Pattern Commands](https://ednark.github.io/continuousVoice/pattern-commands.html) — A live workspace for configurable trigger patterns with optional words, alternatives, and captured parameters. Includes a phrase tester that works without a microphone.
+- [Command Listener](https://ednark.github.io/continuousVoice/command-listener.html) — Listens for specific phrases in continuous speech and fires registered handlers.
+- [RevealJs Integration](https://ednark.github.io/continuousVoice/revealjs/presentation.html) — A work in progress exposing voice commands to slide presentations.
+
+### Feature demos
+
+- [On-Device Recognition](https://ednark.github.io/continuousVoice/on-device-recognition.html) — Runs recognition locally on your device (offline and private), with an explicit language-pack install step.
 
 ## On-device recognition (Chrome 139+)
 
@@ -85,8 +110,6 @@ commands.addRegexCommand('(please)? move *direction', (params) => {
 | `$name` | captures one word as `params.name` |
 | `*name` | captures all remaining words as `params.name` |
 
-Patterns compile once into regexes with named capture groups keeping the author's parameter names, and matches are mapped back to the original spoken words. See [pattern-commands.html](https://ednark.github.io/continuousVoice/pattern-commands.html) for a live workspace with a no-microphone phrase tester.
+Patterns compile once into regexes with named capture groups keeping the author's parameter names, and matches are mapped back to the original spoken words. Try it in the [Pattern Commands demo](https://ednark.github.io/continuousVoice/pattern-commands.html) above.
 
-Several usage examples are included starting from the main index.html.
-
-Browser support for the Web Speech API has not been as broad as could be, and only Chrome works for all the examples on all the systems.
+Browser support for the Web Speech API has not been as broad as could be, and only Chrome works for all the demos on all the systems.
